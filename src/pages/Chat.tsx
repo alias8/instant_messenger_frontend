@@ -75,6 +75,23 @@ export function Chat() {
     }, [userId])
 
     useEffect(() => {
+        if (!conversationId) return
+        fetch(
+            `http://localhost:${BACKEND_PORT_DEFAULT}/conversations/${conversationId}/messages`,
+        )
+            .then((r) => r.json())
+            .then((data) =>
+                setMessages(
+                    (data.messages as Message[]).map((m) => ({
+                        ...m,
+                        seq: BigInt(m.seq),
+                    })),
+                ),
+            )
+            .catch(() => {})
+    }, [conversationId])
+
+    useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
@@ -140,9 +157,11 @@ export function Chat() {
             !text ||
             !socket ||
             socket.readyState !== WebSocket.OPEN ||
-            !conversationId
-        )
-            return
+            !conversationId ||
+            !userId
+        ) {
+            return // message not ready for sending
+        }
         socket.send(
             JSON.stringify({
                 conversation_id: conversationId,
@@ -150,6 +169,16 @@ export function Chat() {
                 body: text,
             }),
         )
+        setMessages((prev) => [
+            ...prev,
+            {
+                conversation_id: conversationId,
+                from_user_id: userId,
+                body: text,
+                seq: BigInt(-Date.now()),
+                created_at: new Date(),
+            },
+        ])
         setInput('')
     }
 
@@ -283,6 +312,7 @@ export function Chat() {
                     padding: 12,
                     display: 'flex',
                     flexDirection: 'column',
+                    alignItems: 'flex-start',
                     gap: 6,
                 }}
             >
