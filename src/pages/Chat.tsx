@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { BACKEND_PORT_DEFAULT } from '../App.tsx'
 
 interface Message {
-    id: string
     conversation_id: string
     from_user_id: string
     body: string
@@ -38,19 +37,12 @@ export function Chat() {
         socketRef.current = ws
 
         ws.onmessage = (event) => {
-            let text = event.data
-            let senderId: string | undefined
             try {
-                const parsed = JSON.parse(event.data)
-                text = parsed.content ?? parsed.message ?? event.data
-                senderId = parsed.senderId ?? parsed.userId
+                const parsed: Message = JSON.parse(event.data)
+                setMessages((prev) => [...prev, { ...parsed }])
             } catch {
                 // raw string message
             }
-            // setMessages((prev) => [
-            //     ...prev,
-            //     { id: crypto.randomUUID(), text, own: senderId === userId },
-            // ])
         }
 
         return () => {
