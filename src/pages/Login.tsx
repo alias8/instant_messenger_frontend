@@ -1,11 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { BACKEND_PORT_DEFAULT } from '../App.tsx'
 
 export function Login() {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const navigate = useNavigate()
+
+    useEffect(() => {
+        if (username === '' && password === '') {
+            if (BACKEND_PORT_DEFAULT === '3000') {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setUsername('user1')
+                setPassword('password1')
+            } else if (BACKEND_PORT_DEFAULT === '3001') {
+                setUsername('user2')
+                setPassword('password1')
+            }
+        }
+    }, [password, username])
 
     async function handleLogin() {
         setError('')
@@ -46,13 +60,13 @@ export function Login() {
             <input
                 placeholder="Username"
                 value={username}
-                onChange={e => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value)}
             />
             <input
                 type="password"
                 placeholder="Password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
             />
             <button onClick={handleLogin}>Login</button>
             <button onClick={handleRegister}>Register</button>
