@@ -25,6 +25,9 @@ export function Chat() {
     const [conversationId, setConversationId] = useState<string | null>(null)
     const [participants, setParticipants] = useState<User[]>([])
     const [userCache, setUserCache] = useState<Record<string, string>>({})
+    const [conversations, setConversations] = useState<
+        { id: string; participants: User[] }[]
+    >([])
     const [showNewChat, setShowNewChat] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
     const [searchResults, setSearchResults] = useState<User[]>([])
@@ -74,6 +77,21 @@ export function Chat() {
                 ws.close()
             }
         }
+    }, [userId])
+
+    function fetchConversations() {
+        if (!userId) return
+        fetch(
+            `http://localhost:${BACKEND_PORT_DEFAULT}/conversations?userId=${userId}`,
+        )
+            .then((r) => r.json())
+            .then((data) => setConversations(data.conversations ?? []))
+            .catch(() => {})
+    }
+
+    useEffect(() => {
+        fetchConversations()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId])
 
     useEffect(() => {
@@ -163,6 +181,7 @@ export function Chat() {
             setSearchQuery('')
             setSearchResults([])
             setSelectedUsers([])
+            fetchConversations()
         } catch {
             setSearchError('Failed to create conversation')
         } finally {
@@ -461,15 +480,88 @@ export function Chat() {
                     gap: 6,
                 }}
             >
-                {!conversationId && (
+                {!conversationId && conversations.length === 0 && (
                     <div
                         style={{
                             color: '#aaa',
                             textAlign: 'center',
                             marginTop: 40,
+                            width: '100%',
                         }}
                     >
-                        Start a new chat to begin messaging
+                        No conversations yet. Start a new chat!
+                    </div>
+                )}
+                {!conversationId && conversations.length > 0 && (
+                    <div style={{ width: '100%' }}>
+                        {conversations.map((convo) => {
+                            const others = convo.participants.filter(
+                                (p) => p.id !== userId,
+                            )
+                            const title = others
+                                .map((p) => p.username)
+                                .join(', ')
+                            const initials = others
+                                .map((p) => p.username[0].toUpperCase())
+                                .join('')
+                                .slice(0, 3)
+                            return (
+                                <div
+                                    key={convo.id}
+                                    onClick={() => {
+                                        setConversationId(convo.id)
+                                        setParticipants(others)
+                                        setUserCache((c) => {
+                                            const next = { ...c }
+                                            others.forEach(
+                                                (u) =>
+                                                    (next[u.id] = u.username),
+                                            )
+                                            return next
+                                        })
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 12,
+                                        padding: '12px 16px',
+                                        borderBottom: '1px solid #f0f2f5',
+                                        cursor: 'pointer',
+                                        background: '#fff',
+                                    }}
+                                    onMouseEnter={(e) =>
+                                        ((
+                                            e.currentTarget as HTMLDivElement
+                                        ).style.background = '#f0f2f5')
+                                    }
+                                    onMouseLeave={(e) =>
+                                        ((
+                                            e.currentTarget as HTMLDivElement
+                                        ).style.background = '#fff')
+                                    }
+                                >
+                                    <div
+                                        style={{
+                                            width: 42,
+                                            height: 42,
+                                            borderRadius: '50%',
+                                            background: '#128c7e',
+                                            color: '#fff',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontWeight: 'bold',
+                                            fontSize:
+                                                others.length > 1 ? 13 : 17,
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        {initials}
+                                    </div>
+                                    <span style={{ fontSize: 15 }}>{title}</span>
+                                </div>
+                            )
+                        })}
                     </div>
                 )}
                 {messages.map((msg) => {
