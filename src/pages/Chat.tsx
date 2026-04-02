@@ -203,34 +203,76 @@ export function Chat() {
                 style={{
                     padding: '8px 12px',
                     borderBottom: '1px solid #ccc',
-                    background: '#f5f5f5',
+                    background: '#075e54',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    color: '#fff',
                 }}
             >
-                <div>
-                    <strong>{username}</strong>
-                    <span
-                        style={{ marginLeft: 8, color: '#888', fontSize: 12 }}
+                {chattingWith ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <button
+                            onClick={() => {
+                                setChattingWith(null)
+                                setConversationId(null)
+                                setMessages([])
+                            }}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#fff',
+                                cursor: 'pointer',
+                                fontSize: 20,
+                                lineHeight: 1,
+                                padding: '0 4px',
+                            }}
+                            aria-label="Back"
+                        >
+                            ‹
+                        </button>
+                        <div
+                            style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: '50%',
+                                background: '#128c7e',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 'bold',
+                                fontSize: 16,
+                                flexShrink: 0,
+                            }}
+                        >
+                            {chattingWith.username[0].toUpperCase()}
+                        </div>
+                        <strong style={{ fontSize: 16 }}>{chattingWith.username}</strong>
+                    </div>
+                ) : (
+                    <div>
+                        <strong>{username}</strong>
+                        <span style={{ marginLeft: 8, color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>
+                            ::{BACKEND_PORT_DEFAULT}
+                        </span>
+                    </div>
+                )}
+                {!chattingWith && (
+                    <button
+                        onClick={() => setShowNewChat((v) => !v)}
+                        style={{
+                            padding: '4px 12px',
+                            borderRadius: 12,
+                            background: '#25d366',
+                            color: '#fff',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: 13,
+                        }}
                     >
-                        server ::{BACKEND_PORT_DEFAULT}
-                    </span>
-                </div>
-                <button
-                    onClick={() => setShowNewChat((v) => !v)}
-                    style={{
-                        padding: '4px 12px',
-                        borderRadius: 12,
-                        background: '#0084ff',
-                        color: '#fff',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: 13,
-                    }}
-                >
-                    {showNewChat ? 'Cancel' : '+ New Chat'}
-                </button>
+                        {showNewChat ? 'Cancel' : '+ New Chat'}
+                    </button>
+                )}
             </div>
 
             {showNewChat && (
@@ -327,23 +369,7 @@ export function Chat() {
                         Start a new chat to begin messaging
                     </div>
                 )}
-                {chattingWith && (
-                    <div
-                        style={{
-                            textAlign: 'center',
-                            color: '#555',
-                            fontSize: 13,
-                            padding: '6px 12px',
-                            background: '#f0f2f5',
-                            borderRadius: 12,
-                            alignSelf: 'center',
-                        }}
-                    >
-                        Now chatting with{' '}
-                        <strong>{chattingWith.username}</strong>
-                    </div>
-                )}
-                {messages.map((msg) => {
+{messages.map((msg) => {
                     const own = msg.from_user_id === userId
                     return (
                         <div
