@@ -18,11 +18,13 @@ export function Chat() {
     const [userId] = useState(() => localStorage.getItem('userId'))
     const [username] = useState(() => localStorage.getItem('username'))
     const socketRef = useRef<WebSocket | null>(null)
+    const fetchingChatterRef = useRef(false)
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
     const bottomRef = useRef<HTMLDivElement>(null)
 
     const [conversationId, setConversationId] = useState<string | null>(null)
+    const [chattingWith, setChattingWith] = useState<User | null>(null)
     const [showNewChat, setShowNewChat] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
     const [searchResults, setSearchResults] = useState<User[]>([])
@@ -40,6 +42,23 @@ export function Chat() {
             try {
                 const parsed: Message = JSON.parse(event.data)
                 setMessages((prev) => [...prev, { ...parsed }])
+                setConversationId((prev) => prev ?? parsed.conversation_id)
+                if (
+                    parsed.from_user_id !== userId &&
+                    !fetchingChatterRef.current
+                ) {
+                    setChattingWith((prev) => {
+                        if (prev) return prev
+                        fetchingChatterRef.current = true
+                        fetch(
+                            `http://localhost:${BACKEND_PORT_DEFAULT}/users/${parsed.from_user_id}`,
+                        )
+                            .then((r) => r.json())
+                            .then((data) => setChattingWith(data.user))
+                            .catch(() => {})
+                        return prev
+                    })
+                }
             } catch {
                 // raw string message
             }
@@ -103,6 +122,7 @@ export function Chat() {
                 return
             }
             setConversationId(data.conversationId)
+            setChattingWith(targetUser)
             setShowNewChat(false)
             setSearchQuery('')
             setSearchResults([])
@@ -277,11 +297,27 @@ export function Chat() {
                         Start a new chat to begin messaging
                     </div>
                 )}
+                {chattingWith && (
+                    <div
+                        style={{
+                            textAlign: 'center',
+                            color: '#555',
+                            fontSize: 13,
+                            padding: '6px 12px',
+                            background: '#f0f2f5',
+                            borderRadius: 12,
+                            alignSelf: 'center',
+                        }}
+                    >
+                        Now chatting with{' '}
+                        <strong>{chattingWith.username}</strong>
+                    </div>
+                )}
                 {messages.map((msg) => {
                     const own = msg.from_user_id === userId
                     return (
                         <div
-                            key={msg.id}
+                            key={msg.seq}
                             style={{
                                 alignSelf: own ? 'flex-end' : 'flex-start',
                                 background: own ? '#0084ff' : '#e4e6eb',
