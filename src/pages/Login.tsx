@@ -16,7 +16,7 @@ export function Login() {
                 setPassword('password1')
             } else if (BACKEND_PORT_DEFAULT === '3001') {
                 setUsername('user2')
-                setPassword('password1')
+                setPassword('password2')
             }
         }
     }, [password, username])

@@ -67,25 +67,27 @@ export function Chat() {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
-    async function searchUsers(query: string) {
-        setSearchQuery(query)
+    useEffect(() => {
         setSearchError(null)
-        if (!query.trim()) {
+        if (!searchQuery.trim()) {
             setSearchResults([])
             return
         }
-        try {
-            const res = await fetch(
-                `http://localhost:${BACKEND_PORT_DEFAULT}/users?username=${encodeURIComponent(query)}`,
-            )
-            const data = await res.json()
-            setSearchResults(
-                (data.users as User[]).filter((u) => u.id !== userId),
-            )
-        } catch {
-            setSearchError('Failed to search users')
-        }
-    }
+        const timer = setTimeout(async () => {
+            try {
+                const res = await fetch(
+                    `http://localhost:${BACKEND_PORT_DEFAULT}/users?username=${encodeURIComponent(searchQuery)}`,
+                )
+                const data = await res.json()
+                setSearchResults(
+                    (data.users as User[]).filter((u) => u.id !== userId),
+                )
+            } catch {
+                setSearchError('Failed to search users')
+            }
+        }, 300)
+        return () => clearTimeout(timer)
+    }, [searchQuery, userId])
 
     async function startConversation(targetUser: User) {
         if (!userId) return
@@ -208,7 +210,7 @@ export function Chat() {
                         }}
                         placeholder="Search by username…"
                         value={searchQuery}
-                        onChange={(e) => searchUsers(e.target.value)}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         autoFocus
                     />
                     {searchError && (
