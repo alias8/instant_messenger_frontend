@@ -781,7 +781,7 @@ const RenderImageMessage = ({ metadata }: RenderImageMessage) => {
         const fetchData = async () => {
             try {
                 const response = await fetch(
-                    `/media/presigned?key=${metadata.key}`,
+                    `http://localhost:${BACKEND_PORT_DEFAULT}/media/presigned?key=${metadata.key}`,
                     {
                         method: 'GET',
                     },
@@ -793,7 +793,8 @@ const RenderImageMessage = ({ metadata }: RenderImageMessage) => {
                         errorText,
                     )
                 } else {
-                    setImageUrl(response.url)
+                    const data = await response.json()
+                    setImageUrl(data.url)
                 }
             } catch (error) {
                 console.error('Error fetching data:', error)
