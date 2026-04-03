@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { ChatBody } from '../components/ChatBody.tsx'
 import { ChatHeader } from '../components/ChatHeader.tsx'
-import { ConversationList } from '../components/ConversationList.tsx'
 import { MessageInput } from '../components/MessageInput.tsx'
-import { MessageList } from '../components/MessageList.tsx'
 import { NewChatPanel } from '../components/NewChatPanel.tsx'
 import { useConversationList } from '../hooks/useConversationList.ts'
 import { useMessageSender } from '../hooks/useMessageSender.ts'
@@ -96,41 +95,24 @@ export function Chat() {
                 />
             )}
 
-            <div
-                style={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    padding: conversationId ? 0 : 12,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
+            <ChatBody
+                conversationId={conversationId}
+                conversations={conversations}
+                userId={userId}
+                messages={messages}
+                userCache={userCache}
+                isGroup={isGroup}
+                bottomRef={bottomRef}
+                onSelectConversation={(id, others) => {
+                    setConversationId(id)
+                    setParticipants(others)
+                    setUserCache((c) => {
+                        const next = { ...c }
+                        others.forEach((u) => (next[u.id] = u.username))
+                        return next
+                    })
                 }}
-            >
-                {!conversationId && (
-                    <ConversationList
-                        conversations={conversations}
-                        userId={userId}
-                        onSelect={(id, others) => {
-                            setConversationId(id)
-                            setParticipants(others)
-                            setUserCache((c) => {
-                                const next = { ...c }
-                                others.forEach((u) => (next[u.id] = u.username))
-                                return next
-                            })
-                        }}
-                    />
-                )}
-                {conversationId && (
-                    <MessageList
-                        messages={messages}
-                        userId={userId}
-                        userCache={userCache}
-                        isGroup={isGroup}
-                        bottomRef={bottomRef}
-                    />
-                )}
-            </div>
+            />
 
             <MessageInput
                 input={sender.input}
