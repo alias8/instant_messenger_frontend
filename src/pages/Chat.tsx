@@ -1,10 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { BACKEND_PORT_DEFAULT } from '../App.tsx'
 
+const MessageType = {
+    text: 'text',
+    image: 'image',
+} as const
+
+interface MessageMetadata {
+    url?: string
+}
+
 interface Message {
     conversation_id: string
     from_user_id: string
-    body: string
+    body?: string
+    type: keyof typeof MessageType
+    metadata: MessageMetadata
     seq: bigint
     created_at: Date
 }
@@ -214,6 +225,8 @@ export function Chat() {
                 conversation_id: conversationId,
                 from_user_id: userId,
                 body: text,
+                metadata: {},
+                type: MessageType.text,
                 seq: BigInt(-Date.now()),
                 created_at: new Date(),
             },
@@ -226,6 +239,62 @@ export function Chat() {
             e.preventDefault()
             sendMessage()
         }
+    }
+
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const ext =
+            file.name.split('.').pop()?.toLowerCase() ??
+            file.type.split('/')[1] ??
+            'bin'
+        try {
+            const s3uploadUrl = await fetch(
+                `http://localhost:${BACKEND_PORT_DEFAULT}/media`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileType: ext }),
+                },
+            )
+                .then((r) => r.json())
+                .then((data: { url: string }) => {
+                    return data.url
+                })
+                .catch(() => {})
+            if (s3uploadUrl) {
+                const response = await fetch(s3uploadUrl, {
+                    method: 'PUT',
+                    body: file,
+                })
+                if (!response.ok) {
+                    const errorText = await response.text()
+                    console.error('S3 upload failed:', errorText)
+                }
+                const s3urlOfFile = response.url.split('?X-Amz-Algorithm')[0]
+                const socket = socketRef.current
+                if (!socket || socket.readyState !== WebSocket.OPEN) {
+                    console.error(
+                        'Socket not ready to send file url to backend',
+                    )
+                    return
+                }
+                socket.send(
+                    JSON.stringify({
+                        conversation_id: conversationId,
+                        from_user_id: userId,
+                        type: MessageType.image,
+                        metadata: { url: s3urlOfFile },
+                        body: null,
+                    }),
+                )
+            }
+        } catch {
+            // ignore
+        }
+        e.target.value = ''
     }
 
     const inConversation = participants.length > 0
@@ -262,7 +331,13 @@ export function Chat() {
                 }}
             >
                 {inConversation ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                        }}
+                    >
                         <button
                             onClick={() => {
                                 setParticipants([])
@@ -558,7 +633,9 @@ export function Chat() {
                                     >
                                         {initials}
                                     </div>
-                                    <span style={{ fontSize: 15 }}>{title}</span>
+                                    <span style={{ fontSize: 15 }}>
+                                        {title}
+                                    </span>
                                 </div>
                             )
                         })}
@@ -589,17 +666,21 @@ export function Chat() {
                                     {senderName}
                                 </div>
                             )}
-                            <div
-                                style={{
-                                    background: own ? '#0084ff' : '#e4e6eb',
-                                    color: own ? '#fff' : '#000',
-                                    padding: '8px 12px',
-                                    borderRadius: 18,
-                                    wordBreak: 'break-word',
-                                }}
-                            >
-                                {msg.body}
-                            </div>
+                            {msg.type === MessageType.text ? (
+                                <div
+                                    style={{
+                                        background: own ? '#0084ff' : '#e4e6eb',
+                                        color: own ? '#fff' : '#000',
+                                        padding: '8px 12px',
+                                        borderRadius: 18,
+                                        wordBreak: 'break-word',
+                                    }}
+                                >
+                                    {msg.body}
+                                </div>
+                            ) : (
+                                <img src={msg.metadata.url}></img>
+                            )}
                         </div>
                     )
                 })}
@@ -614,6 +695,33 @@ export function Chat() {
                     borderTop: '1px solid #ccc',
                 }}
             >
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    style={{ display: 'none' }}
+                    onChange={handleFileSelect}
+                />
+                <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!conversationId}
+                    style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: '50%',
+                        background: conversationId ? '#f0f2f5' : '#e0e0e0',
+                        border: 'none',
+                        cursor: conversationId ? 'pointer' : 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        fontSize: 18,
+                        color: conversationId ? '#555' : '#aaa',
+                    }}
+                    aria-label="Attach file"
+                >
+                    📎
+                </button>
                 <input
                     style={{
                         flex: 1,
