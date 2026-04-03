@@ -804,5 +804,7 @@ const RenderImageMessage = ({ metadata }: RenderImageMessage) => {
         fetchData()
     }, [metadata.key])
 
-    return <img src={imageUrl}></img>
+    return (
+        <img src={imageUrl} style={{ maxWidth: '100%', maxHeight: 300 }}></img>
+    )
 }
