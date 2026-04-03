@@ -7,7 +7,8 @@ const MessageType = {
 } as const
 
 interface MessageMetadata {
-    url?: string
+    url?: string // will look like https://my-instant-messenger-project-uploads-001598327238-us-east-1-an.s3.us-east-1.amazonaws.com/uploads/76124c25-b373-48cd-a5fe-e700a41b9de4.jpg
+    key?: string // will look like uploads/76124c25-b373-48cd-a5fe-e700a41b9de4.jpg
 }
 
 interface MessageFromBackend {
@@ -21,6 +22,11 @@ interface MessageFromBackend {
 }
 
 type MessageToSendBackend = Omit<MessageFromBackend, 'seq' | 'created_at'>
+
+interface PresignedUrlResponse {
+    url: string
+    key: string
+}
 
 interface User {
     id: string
@@ -122,7 +128,7 @@ export function Chat() {
                 ),
             )
             .catch(() => {})
-    }, [conversationId])
+    }, [conversationId, userId])
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -263,12 +269,12 @@ export function Chat() {
                 },
             )
                 .then((r) => r.json())
-                .then((data: { url: string }) => {
-                    return data.url
+                .then((data: PresignedUrlResponse) => {
+                    return data
                 })
                 .catch(() => {})
             if (s3uploadUrl) {
-                const response = await fetch(s3uploadUrl, {
+                const response = await fetch(s3uploadUrl.url, {
                     method: 'PUT',
                     body: file,
                 })
@@ -276,23 +282,26 @@ export function Chat() {
                     const errorText = await response.text()
                     console.error('S3 upload failed:', errorText)
                 }
-                const s3urlOfFile = response.url.split('?X-Amz-Algorithm')[0]
                 const socket = socketRef.current
-                if (!socket || socket.readyState !== WebSocket.OPEN) {
+                if (
+                    !socket ||
+                    socket.readyState !== WebSocket.OPEN ||
+                    !conversationId ||
+                    !userId
+                ) {
                     console.error(
                         'Socket not ready to send file url to backend',
                     )
                     return
                 }
-                socket.send(
-                    JSON.stringify({
-                        conversation_id: conversationId,
-                        from_user_id: userId,
-                        type: MessageType.image,
-                        metadata: { url: s3urlOfFile },
-                        body: null,
-                    }),
-                )
+                const messageToSendToBackend: MessageToSendBackend = {
+                    conversation_id: conversationId,
+                    from_user_id: userId,
+                    type: MessageType.image,
+                    metadata: { url: s3uploadUrl.url, key: s3uploadUrl.key },
+                    body: undefined,
+                }
+                socket.send(JSON.stringify(messageToSendToBackend))
             }
         } catch {
             // ignore
@@ -682,7 +691,7 @@ export function Chat() {
                                     {msg.body}
                                 </div>
                             ) : (
-                                <img src={msg.metadata.url}></img>
+                                <RenderImageMessage metadata={msg.metadata} />
                             )}
                         </div>
                     )
@@ -760,4 +769,39 @@ export function Chat() {
             </div>
         </div>
     )
+}
+
+interface RenderImageMessage {
+    metadata: MessageMetadata
+}
+
+const RenderImageMessage = ({ metadata }: RenderImageMessage) => {
+    const [imageUrl, setImageUrl] = useState<string>('')
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch(
+                    `/media/presigned?key=${metadata.key}`,
+                    {
+                        method: 'GET',
+                    },
+                )
+                if (!response.ok) {
+                    const errorText = await response.text()
+                    console.error(
+                        `S3 upload failed when fetching url for key ${metadata.key}:`,
+                        errorText,
+                    )
+                } else {
+                    setImageUrl(response.url)
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error)
+            }
+        }
+
+        fetchData()
+    }, [metadata.key])
+
+    return <img src={imageUrl}></img>
 }
