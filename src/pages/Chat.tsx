@@ -10,7 +10,7 @@ interface MessageMetadata {
     url?: string
 }
 
-interface Message {
+interface MessageFromBackend {
     conversation_id: string
     from_user_id: string
     body?: string
@@ -19,6 +19,8 @@ interface Message {
     seq: bigint
     created_at: Date
 }
+
+type MessageToSendBackend = Omit<MessageFromBackend, 'seq' | 'created_at'>
 
 interface User {
     id: string
@@ -29,7 +31,7 @@ export function Chat() {
     const [userId] = useState(() => localStorage.getItem('userId'))
     const [username] = useState(() => localStorage.getItem('username'))
     const socketRef = useRef<WebSocket | null>(null)
-    const [messages, setMessages] = useState<Message[]>([])
+    const [messages, setMessages] = useState<MessageFromBackend[]>([])
     const [input, setInput] = useState('')
     const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -55,7 +57,7 @@ export function Chat() {
 
         ws.onmessage = (event) => {
             try {
-                const parsed: Message = JSON.parse(event.data)
+                const parsed: MessageFromBackend = JSON.parse(event.data)
                 setMessages((prev) => [...prev, { ...parsed }])
                 setConversationId((prev) => prev ?? parsed.conversation_id)
                 if (parsed.from_user_id !== userId) {
@@ -108,12 +110,12 @@ export function Chat() {
     useEffect(() => {
         if (!conversationId) return
         fetch(
-            `http://localhost:${BACKEND_PORT_DEFAULT}/conversations/${conversationId}/messages`,
+            `http://localhost:${BACKEND_PORT_DEFAULT}/conversations/${conversationId}/messages?userId=${userId}`,
         )
             .then((r) => r.json())
             .then((data) =>
                 setMessages(
-                    (data.messages as Message[]).map((m) => ({
+                    (data.messages as MessageFromBackend[]).map((m) => ({
                         ...m,
                         seq: BigInt(m.seq),
                     })),
@@ -200,7 +202,7 @@ export function Chat() {
         }
     }
 
-    function sendMessage() {
+    function sendTextMessage() {
         const text = input.trim()
         const socket = socketRef.current
         if (
@@ -212,13 +214,14 @@ export function Chat() {
         ) {
             return
         }
-        socket.send(
-            JSON.stringify({
-                conversation_id: conversationId,
-                from_user_id: userId,
-                body: text,
-            }),
-        )
+        const messageToSend: MessageToSendBackend = {
+            metadata: {},
+            type: MessageType.text,
+            conversation_id: conversationId,
+            from_user_id: userId,
+            body: text,
+        }
+        socket.send(JSON.stringify(messageToSend))
         setMessages((prev) => [
             ...prev,
             {
@@ -237,7 +240,7 @@ export function Chat() {
     function handleKeyDown(e: React.KeyboardEvent) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
-            sendMessage()
+            sendTextMessage()
         }
     }
 
@@ -741,7 +744,7 @@ export function Chat() {
                     autoFocus
                 />
                 <button
-                    onClick={sendMessage}
+                    onClick={sendTextMessage}
                     disabled={!conversationId}
                     style={{
                         padding: '8px 16px',
