@@ -6,10 +6,16 @@ import { MessageInput } from '../components/MessageInput.tsx'
 import { MessageList } from '../components/MessageList.tsx'
 import { NewChatPanel } from '../components/NewChatPanel.tsx'
 import {
+    createConversation,
+    getConversations,
+    getMessages,
+} from '../services/conversationService.ts'
+import { getUploadPresignedUrl, uploadFileToS3 } from '../services/mediaService.ts'
+import { getUserById, searchUsers } from '../services/userService.ts'
+import {
     MessageType,
     type MessageFromBackend,
     type MessageToSendBackend,
-    type PresignedUrlResponse,
     type User,
 } from '../types/chat.ts'
 
@@ -50,14 +56,11 @@ export function Chat() {
                 if (parsed.from_user_id !== userId) {
                     setUserCache((cache) => {
                         if (cache[parsed.from_user_id]) return cache
-                        fetch(
-                            `http://localhost:${BACKEND_PORT_DEFAULT}/users/${parsed.from_user_id}`,
-                        )
-                            .then((r) => r.json())
-                            .then((data) =>
+                        getUserById(parsed.from_user_id)
+                            .then((user) =>
                                 setUserCache((c) => ({
                                     ...c,
-                                    [data.user.id]: data.user.username,
+                                    [user.id]: user.username,
                                 })),
                             )
                             .catch(() => {})
@@ -81,11 +84,8 @@ export function Chat() {
 
     function fetchConversations() {
         if (!userId) return
-        fetch(
-            `http://localhost:${BACKEND_PORT_DEFAULT}/conversations?userId=${userId}`,
-        )
-            .then((r) => r.json())
-            .then((data) => setConversations(data.conversations ?? []))
+        getConversations(userId)
+            .then(setConversations)
             .catch(() => {})
     }
 
@@ -95,19 +95,9 @@ export function Chat() {
     }, [userId])
 
     useEffect(() => {
-        if (!conversationId) return
-        fetch(
-            `http://localhost:${BACKEND_PORT_DEFAULT}/conversations/${conversationId}/messages?userId=${userId}`,
-        )
-            .then((r) => r.json())
-            .then((data) =>
-                setMessages(
-                    (data.messages as MessageFromBackend[]).map((m) => ({
-                        ...m,
-                        seq: BigInt(m.seq),
-                    })),
-                ),
-            )
+        if (!conversationId || !userId) return
+        getMessages(conversationId, userId)
+            .then(setMessages)
             .catch(() => {})
     }, [conversationId, userId])
 
@@ -123,12 +113,9 @@ export function Chat() {
         }
         const timer = setTimeout(async () => {
             try {
-                const res = await fetch(
-                    `http://localhost:${BACKEND_PORT_DEFAULT}/users?username=${encodeURIComponent(searchQuery)}`,
-                )
-                const data = await res.json()
+                const users = await searchUsers(searchQuery)
                 setSearchResults(
-                    (data.users as User[]).filter(
+                    users.filter(
                         (u) =>
                             u.id !== userId &&
                             !selectedUsers.some((s) => s.id === u.id),
@@ -155,22 +142,15 @@ export function Chat() {
         setCreatingConvo(true)
         setSearchError(null)
         try {
-            const res = await fetch(
-                `http://localhost:${BACKEND_PORT_DEFAULT}/conversations`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userIds: [userId, ...selectedUsers.map((u) => u.id)],
-                    }),
-                },
-            )
-            const data = await res.json()
-            if (!res.ok) {
-                setSearchError(data.error ?? 'Failed to create conversation')
+            const result = await createConversation([
+                userId,
+                ...selectedUsers.map((u) => u.id),
+            ])
+            if (!result.ok) {
+                setSearchError(result.error)
                 return
             }
-            setConversationId(data.conversationId)
+            setConversationId(result.conversationId)
             setParticipants(selectedUsers)
             setUserCache((c) => {
                 const next = { ...c }
@@ -239,25 +219,9 @@ export function Chat() {
             file.type.split('/')[1] ??
             'bin'
         try {
-            const s3uploadUrl = await fetch(
-                `http://localhost:${BACKEND_PORT_DEFAULT}/media`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fileType: ext }),
-                },
-            )
-                .then((r) => r.json())
-                .then((data: PresignedUrlResponse) => data)
-                .catch(() => {})
+            const s3uploadUrl = await getUploadPresignedUrl(ext).catch(() => undefined)
             if (s3uploadUrl) {
-                const response = await fetch(s3uploadUrl.url, {
-                    method: 'PUT',
-                    body: file,
-                })
-                if (!response.ok) {
-                    console.error('S3 upload failed:', await response.text())
-                }
+                await uploadFileToS3(s3uploadUrl.url, file)
                 const socket = socketRef.current
                 if (
                     !socket ||
