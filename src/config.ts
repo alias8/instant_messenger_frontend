@@ -1,0 +1,1 @@
+export const BACKEND_PORT_DEFAULT = import.meta.env.VITE_BACKEND_PORT ?? '3000'

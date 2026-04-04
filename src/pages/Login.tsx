@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BACKEND_PORT_DEFAULT } from '../App.tsx'
+import { BACKEND_PORT_DEFAULT } from '../config.ts'
 
 export function Login() {
     const [username, setUsername] = useState('')

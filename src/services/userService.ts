@@ -1,4 +1,4 @@
-import { BACKEND_PORT_DEFAULT } from '../App.tsx'
+import { BACKEND_PORT_DEFAULT } from '../config.ts'
 import type { User } from '../types/chat.ts'
 
 const BASE = `http://localhost:${BACKEND_PORT_DEFAULT}`

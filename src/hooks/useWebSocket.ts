@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
-import { BACKEND_PORT_DEFAULT } from '../App.tsx'
+import { BACKEND_PORT_DEFAULT } from '../config.ts'
 import { getUserById } from '../services/userService.ts'
 import type { MessageFromBackend } from '../types/chat.ts'
 
