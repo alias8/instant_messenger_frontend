@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BACKEND_PORT_DEFAULT } from '../config.ts'
+import { useAuth } from '../context/AuthContext.tsx'
 import { getFeatureFlag } from '../services/featureFlagService.ts'
 
 export function Login() {
@@ -8,6 +9,7 @@ export function Login() {
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const navigate = useNavigate()
+    const { login } = useAuth()
 
     useEffect(() => {
         if (username === '' && password === '') {
@@ -35,8 +37,7 @@ export function Login() {
             return
         }
         const data = await res.json()
-        localStorage.setItem('userId', data.id)
-        localStorage.setItem('username', data.username)
+        login(data.id, data.username)
         navigate('/chat')
     }
 
@@ -60,6 +61,7 @@ export function Login() {
     return (
         <div>
             <h2>Instant Messenger</h2>
+            {FF1 ?? <div>Feature flag on</div>}
             <input
                 placeholder="Username"
                 value={username}

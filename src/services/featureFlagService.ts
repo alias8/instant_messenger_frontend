@@ -19,6 +19,15 @@ interface Flag {
 
 const flagCache = new Map<string, Flag>()
 const evalCache = new Map<string, boolean | null>()
+let currentUserId: string | null = null
+
+export function setCurrentUserId(id: string | null) {
+    currentUserId = id
+}
+
+export function clearEvalCache() {
+    evalCache.clear()
+}
 
 export async function fetchFlags(): Promise<void> {
     const res = await fetch(`${FF_SERVICE_URL}/flags`, {
@@ -45,7 +54,7 @@ function getOrCreateAnonymousId(): string {
 }
 
 export function getFeatureFlag(name: string, userId?: string): boolean | null {
-    const uid = userId ?? localStorage.getItem('userId') ?? getOrCreateAnonymousId()
+    const uid = userId ?? currentUserId ?? getOrCreateAnonymousId()
     const cacheKey = `${name}:${uid}`
     if (evalCache.has(cacheKey)) return evalCache.get(cacheKey)!
 

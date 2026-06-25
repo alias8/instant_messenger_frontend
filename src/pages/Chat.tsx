@@ -3,6 +3,7 @@ import { ChatBody } from '../components/ChatBody.tsx'
 import { ChatHeader } from '../components/ChatHeader.tsx'
 import { MessageInput } from '../components/MessageInput.tsx'
 import { NewChatPanel } from '../components/NewChatPanel.tsx'
+import { useAuth } from '../context/AuthContext.tsx'
 import { useConversationList } from '../hooks/useConversationList.ts'
 import { useMessageSender } from '../hooks/useMessageSender.ts'
 import { useNewChat } from '../hooks/useNewChat.ts'
@@ -11,8 +12,7 @@ import { getMessages } from '../services/conversationService.ts'
 import type { MessageFromBackend, User } from '../types/chat.ts'
 
 export function Chat() {
-    const [userId] = useState(() => localStorage.getItem('userId'))
-    const [username] = useState(() => localStorage.getItem('username'))
+    const { userId, username } = useAuth()
 
     const [conversationId, setConversationId] = useState<string | null>(null)
     const [participants, setParticipants] = useState<User[]>([])
