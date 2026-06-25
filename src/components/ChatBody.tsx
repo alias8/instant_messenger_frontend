@@ -3,6 +3,7 @@ import type { Conversation } from '../services/conversationService.ts'
 import type { MessageFromBackend, User } from '../types/chat.ts'
 import { ConversationList } from './ConversationList.tsx'
 import { MessageList } from './MessageList.tsx'
+import { getFeatureFlag } from '../services/featureFlagService.ts'
 
 interface ChatBodyProps {
     conversationId: string | null
@@ -25,6 +26,7 @@ export function ChatBody({
     bottomRef,
     onSelectConversation,
 }: ChatBodyProps) {
+    const FF2 = getFeatureFlag('feature2')
     return (
         <div
             style={{

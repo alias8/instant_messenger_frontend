@@ -53,15 +53,15 @@ function getOrCreateAnonymousId(): string {
     return id
 }
 
-export function getFeatureFlag(name: string, userId?: string): boolean | null {
-    const uid = userId ?? currentUserId ?? getOrCreateAnonymousId()
+export function getFeatureFlag(name: string): boolean | null {
+    const uid = currentUserId ?? getOrCreateAnonymousId()
     const cacheKey = `${name}:${uid}`
     if (evalCache.has(cacheKey)) return evalCache.get(cacheKey)!
 
     const flag = flagCache.get(name)
     if (!flag) return null
 
-    const override = uid ? flag.flagOverrides.get(uid) : undefined
+    const override = flag.flagOverrides.get(uid)
     if (override !== undefined) {
         evalCache.set(cacheKey, override)
         return override
