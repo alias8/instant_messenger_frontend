@@ -1,8 +1,14 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { Chat } from './pages/Chat.tsx'
 import { Login } from './pages/Login.tsx'
+import { fetchFlags } from './services/featureFlagService.ts'
 
 function App() {
+    useEffect(() => {
+        fetchFlags()
+    }, [])
+
     return (
         <BrowserRouter>
             <Routes>

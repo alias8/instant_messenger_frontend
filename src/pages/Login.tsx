@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BACKEND_PORT_DEFAULT } from '../config.ts'
+import { getFeatureFlag } from '../services/featureFlagService.ts'
 
 export function Login() {
     const [username, setUsername] = useState('')
@@ -53,6 +54,8 @@ export function Login() {
         }
         await handleLogin()
     }
+    
+    const FF1 = getFeatureFlag('feature1')
 
     return (
         <div>
