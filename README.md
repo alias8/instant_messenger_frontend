@@ -1,6 +1,75 @@
 # Instant Messenger Frontend
 
-React + TypeScript + Vite frontend for the instant messenger app.
+React + TypeScript + Vite frontend for the instant messenger app. The backend is a [Node.js/Express server](https://github.com/alias8/nodejs_instant_messenger_backend)
+
+---
+
+## Architecture overview
+
+```
+Browser                  Backend (Node/Express)          Infrastructure
+──────────────────────   ────────────────────────────    ──────────────
+React SPA          ──── REST API (Express)          ─── PostgreSQL (user/conversation data)
+WebSocket client   ──── WebSocket server (ws)       ─── Redis (pub/sub message fan-out)
+                                                    ─── Elasticsearch (message search)
+```
+
+---
+
+## Sending and receiving messages
+
+### Connection
+
+When a user logs in and navigates to the chat page, the frontend opens a WebSocket connection to the backend:
+
+```
+ws://localhost:3000?userId=<userId>
+```
+
+The backend's `ConnectionManager` stores this socket in a `userId → WebSocket` map and subscribes a Redis channel (`user:<userId>`) for that connection.
+
+### Sending a message
+
+1. The sender's client sends a JSON frame over WebSocket: `{ conversation_id, from_user_id, body }`.
+2. `MessageService.handleIncoming()` runs on the backend:
+   - Increments a Redis sequence counter for the conversation to give the message a monotonic `seq` number.
+   - Persists the message to PostgreSQL via Prisma.
+   - Indexes the message in Elasticsearch for search.
+   - Looks up all conversation members except the sender.
+3. **Fan-out** — for conversations with fewer than 100 members, the backend publishes a `user:<recipientId>` event to Redis for each recipient individually. For conversations with 100+ members it publishes a single `conversation:<conversationId>` event instead.
+
+### Delivering to the recipient
+
+Each backend server subscribes to Redis events for the users connected to it. When a `user:<userId>` event arrives, the server looks up that user's WebSocket and pushes the message directly. This means message delivery works correctly even if the sender and recipient are connected to different backend instances — Redis acts as the cross-server message bus.
+
+On the frontend, `useWebSocket` receives the message in its `onmessage` handler, passes it up to `Chat.tsx` via the `onMessage` callback, and appends it to the message list. If the sender is someone not yet in the local user cache, it fetches their username via `GET /users/:id` and caches it.
+
+### Large conversation handling
+
+For conversations with 100+ members, delivering one Redis message per member would be prohibitively expensive. Instead a single event is published to a `conversation:<id>` channel. Clients subscribed to that channel receive a notification that new messages exist and fetch them on demand rather than having them pushed directly.
+
+---
+
+## File sending
+
+Files are uploaded directly to S3 from the browser using a **presigned URL** flow. The backend never handles the file bytes — it only deals in short-lived signed S3 URLs.
+
+### Upload flow
+
+1. User clicks the attach button, selects a file. Only `jpg`, `jpeg`, and `png` are accepted.
+2. The frontend calls `POST /media` with the file extension. The backend generates a UUID key (`uploads/<uuid>.<ext>`), creates an S3 presigned `PUT` URL valid for 5 minutes, and returns `{ url, key }`.
+3. The browser `PUT`s the file directly to S3 using that URL. The backend is not involved in the transfer.
+4. Once the upload completes, the frontend sends a WebSocket message of type `image` with `metadata: { url, key }` — the same path as a text message but with no `body`. The message is persisted to PostgreSQL and fanned out to recipients via Redis as normal.
+
+### Why presigned URLs instead of uploading through the backend
+
+Routing file bytes through the backend would mean large payloads consuming server memory and bandwidth for every upload. With presigned URLs the file goes straight from the browser to S3, and the backend only handles a tiny metadata exchange. This also means S3 handles scaling the file storage — the backend stays stateless.
+
+### Viewing images
+
+When a message of type `image` is rendered, the frontend calls `GET /media/presigned?key=<key>` to get a presigned `GET` URL valid for 24 hours. This URL is used as the `src` of the image. Presigned `GET` URLs are used rather than making the S3 objects public, so files are only accessible to users who are authenticated with this backend.
+
+---
 
 ## Login flow
 
