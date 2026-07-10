@@ -6,7 +6,11 @@
     "scripts": {
         "dev1": "vite",
         "dev2": "VITE_BACKEND_PORT=3001 vite --port 5174",
+        "dev:guestA": "VITE_GUEST_MODE=true VITE_ROLE=userA vite",
+        "dev:guestB": "VITE_GUEST_MODE=true VITE_ROLE=userB vite --port 5174",
         "build": "tsc -b && vite build",
+        "build:userA": "VITE_GUEST_MODE=true VITE_ROLE=userA vite build",
+        "build:userB": "VITE_GUEST_MODE=true VITE_ROLE=userB vite build --outDir dist-userB",
         "lint": "eslint .",
         "format": "prettier --write 'src/**/*.{ts,tsx}'",
         "preview": "vite preview"

@@ -1,17 +1,53 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BACKEND_PORT_DEFAULT } from '../config.ts'
+import { BACKEND_PORT_DEFAULT, GUEST_MODE, ROLE } from '../config.ts'
 import { useAuth } from '../context/AuthContext.tsx'
 import { getFeatureFlag } from '../services/featureFlagService.ts'
+import { loginAsGuest } from '../services/userService.ts'
 
 export function Login() {
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
+    const [provisioning, setProvisioning] = useState(GUEST_MODE)
     const navigate = useNavigate()
-    const { login } = useAuth()
+    const { login, userId, isLoading } = useAuth()
+    // Guards against this effect acting twice — both from React StrictMode's
+    // dev-mode double-invoke (which would otherwise fire POST /users/guest
+    // twice per tab and race two separate pairings against each other, the
+    // same class of bug as the WebSocket double-connect race fixed earlier in
+    // ConnectionManager) and from its own re-run once login() flips `userId`
+    // from null to set (which would otherwise re-enter the `if (userId)`
+    // branch and overwrite the just-computed `/chat?conversationId=...`
+    // navigation with a bare `/chat`).
+    const hasActedRef = useRef(false)
+
+    // Guest demo mode: skip the password form entirely. Once auth rehydration
+    // has resolved, either the returning guest's cookie already set userId
+    // (just continue to /chat), or there's no session yet and we provision a
+    // fresh ephemeral guest and get paired via the backend's waiting room.
+    useEffect(() => {
+        if (!GUEST_MODE || isLoading || hasActedRef.current) return
+        if (userId) {
+            hasActedRef.current = true
+            navigate('/chat')
+            return
+        }
+        hasActedRef.current = true
+        loginAsGuest(ROLE)
+            .then((data) => {
+                login(data.id, data.username)
+                navigate(data.conversationId ? `/chat?conversationId=${data.conversationId}` : '/chat')
+            })
+            .catch(() => {
+                hasActedRef.current = false
+                setError('Could not start a demo session. Please refresh.')
+            })
+            .finally(() => setProvisioning(false))
+    }, [userId, isLoading, login, navigate])
 
     useEffect(() => {
+        if (GUEST_MODE) return
         if (username === '' && password === '') {
             if (BACKEND_PORT_DEFAULT === '3000') {
                 // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -55,7 +91,17 @@ export function Login() {
         }
         await handleLogin()
     }
-    
+
+    if (GUEST_MODE) {
+        return (
+            <div>
+                <h2>Instant Messenger</h2>
+                {provisioning ? <p>Connecting you to a live chat…</p> : null}
+                {error && <p>{error}</p>}
+            </div>
+        )
+    }
+
     const FF1 = getFeatureFlag('feature1')
 
     return (

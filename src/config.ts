@@ -1,3 +1,5 @@
 export const BACKEND_PORT_DEFAULT = import.meta.env.VITE_BACKEND_PORT ?? '3000'
 export const FF_SERVICE_URL = import.meta.env.VITE_FF_SERVICE_URL ?? 'http://localhost:8080'
 export const FF_API_KEY = import.meta.env.VITE_FF_API_KEY ?? 'test-token-1'
+export const ROLE = import.meta.env.VITE_ROLE ?? 'userA'
+export const GUEST_MODE = import.meta.env.VITE_GUEST_MODE === 'true'

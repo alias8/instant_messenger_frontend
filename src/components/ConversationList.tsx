@@ -1,3 +1,4 @@
+import { GUEST_MODE } from '../config.ts'
 import type { User } from '../types/chat.ts'
 
 interface Conversation {
@@ -26,7 +27,9 @@ export function ConversationList({
                     width: '100%',
                 }}
             >
-                No conversations yet. Start a new chat!
+                {GUEST_MODE
+                    ? 'Waiting for the other side to join — open the other demo link within 10 seconds.'
+                    : 'No conversations yet. Start a new chat!'}
             </div>
         )
     }

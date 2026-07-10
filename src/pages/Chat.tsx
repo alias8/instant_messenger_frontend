@@ -14,7 +14,12 @@ import type { MessageFromBackend, User } from '../types/chat.ts'
 export function Chat() {
     const { userId, username } = useAuth()
 
-    const [conversationId, setConversationId] = useState<string | null>(null)
+    // Seeded once from ?conversationId=... (set by the guest-demo flow when a
+    // guest gets paired immediately on login) so a freshly-paired guest lands
+    // straight in the chat instead of an empty conversation list.
+    const [conversationId, setConversationId] = useState<string | null>(
+        () => new URLSearchParams(window.location.search).get('conversationId'),
+    )
     const [participants, setParticipants] = useState<User[]>([])
     const [messages, setMessages] = useState<MessageFromBackend[]>([])
     const [userCache, setUserCache] = useState<Record<string, string>>({})
@@ -35,6 +40,22 @@ export function Chat() {
         if (!conversationId || !userId) return
         getMessages(conversationId, userId).then(setMessages).catch(() => {})
     }, [conversationId, userId])
+
+    // If we landed directly on a conversationId (guest-demo pairing) rather than
+    // via ConversationList/NewChatPanel, participants isn't populated yet —
+    // derive it once the conversation list loads.
+    useEffect(() => {
+        if (!conversationId || participants.length > 0) return
+        const convo = conversations.find((c) => c.id === conversationId)
+        if (!convo) return
+        const others = convo.participants.filter((p) => p.id !== userId)
+        setParticipants(others)
+        setUserCache((c) => {
+            const next = { ...c }
+            others.forEach((u) => (next[u.id] = u.username))
+            return next
+        })
+    }, [conversationId, conversations, participants.length, userId])
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

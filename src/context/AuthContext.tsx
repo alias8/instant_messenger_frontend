@@ -7,6 +7,7 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
+    isLoading: boolean
     login: (userId: string, username: string) => void
     logout: () => Promise<void>
 }
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [auth, setAuth] = useState<AuthState>({ userId: null, username: null })
+    const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
         fetch('/users/me')
@@ -26,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
             })
             .catch(() => {})
+            .finally(() => setIsLoading(false))
     }, [])
 
     function login(userId: string, username: string) {
@@ -42,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ ...auth, login, logout }}>
+        <AuthContext.Provider value={{ ...auth, isLoading, login, logout }}>
             {children}
         </AuthContext.Provider>
     )

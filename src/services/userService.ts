@@ -16,3 +16,11 @@ export async function searchUsers(username: string): Promise<User[]> {
     const data = await res.json()
     return data.users as User[]
 }
+
+export async function loginAsGuest(
+    role: string,
+): Promise<{ id: string; username: string; conversationId: string | null }> {
+    const res = await fetch(`${BASE}/users/guest?role=${role}`, { method: 'POST' })
+    if (!res.ok) throw new Error('Failed to create guest session')
+    return res.json()
+}
