@@ -1,6 +1,32 @@
 # Instant Messenger Frontend
 
-React + TypeScript + Vite frontend for the instant messenger app. The backend is a [Node.js/Express server](https://github.com/alias8/nodejs_instant_messenger_backend)
+React + TypeScript + Vite frontend for the instant messenger app. The backend is a [Node.js/Express server](https://github.com/alias8/nodejs_instant_messenger_backend), also available locally at `../nodejs_instant_messenger_backend`.
+
+---
+
+## Running locally
+
+This app is normally run alongside **two** instances of the backend (simulating two separate servers), so you can send a message from one browser tab and see it arrive in another connected to a different backend instance.
+
+1. Start the backend first — see its README for full setup (Postgres, Redis, migrations, seed data). In short, from `../nodejs_instant_messenger_backend`:
+
+   ```bash
+   npm run port3000   # Terminal 1
+   npm run port3001   # Terminal 2
+   ```
+
+2. Install dependencies and start the frontend against each backend port:
+
+   ```bash
+   npm install
+
+   npm run dev1   # Terminal 3 — http://localhost:5173, proxies to backend on :3000
+   npm run dev2   # Terminal 4 — http://localhost:5174, proxies to backend on :3001
+   ```
+
+3. Open `http://localhost:5173` and `http://localhost:5174` in two browser windows/tabs, log in as two different seeded users (e.g. `user1`/`password1` and `user2`/`password2`), and send a message from one — it should appear in the other.
+
+The backend port used is controlled by the `VITE_BACKEND_PORT` env var (see `vite.config.ts`), which the `dev1`/`dev2` scripts set for you.
 
 ---
 
