@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { apiFetch } from '../services/api.ts'
 import { clearEvalCache, setCurrentUserId } from '../services/featureFlagService.ts'
 
 interface AuthState {
@@ -19,7 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
-        fetch('/users/me')
+        apiFetch('/users/me')
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
                 if (data) {
@@ -38,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     async function logout() {
-        await fetch('/users/logout', { method: 'POST' })
+        await apiFetch('/users/logout', { method: 'POST' })
         setCurrentUserId(null)
         clearEvalCache()
         setAuth({ userId: null, username: null })

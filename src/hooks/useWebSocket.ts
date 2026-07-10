@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
-import { BACKEND_PORT_DEFAULT } from '../config.ts'
+import { WS_BASE_URL } from '../services/api.ts'
 import { getUserById } from '../services/userService.ts'
 import type { MessageFromBackend } from '../types/chat.ts'
 
@@ -25,9 +25,7 @@ export function useWebSocket(
 
     useEffect(() => {
         if (!userId) return
-        const ws = new WebSocket(
-            `ws://localhost:${BACKEND_PORT_DEFAULT}?userId=${userId}`,
-        )
+        const ws = new WebSocket(`${WS_BASE_URL}?userId=${userId}`)
         socketRef.current = ws
 
         ws.onmessage = (event) => {

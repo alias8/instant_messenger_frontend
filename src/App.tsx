@@ -7,7 +7,7 @@ import { fetchFlags } from './services/featureFlagService.ts'
 
 function App() {
     useEffect(() => {
-        fetchFlags()
+        fetchFlags().catch(() => {})
     }, [])
 
     return (

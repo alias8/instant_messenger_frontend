@@ -1,7 +1,5 @@
-import { BACKEND_PORT_DEFAULT } from '../config.ts'
+import { apiFetch } from './api.ts'
 import type { MessageFromBackend, User } from '../types/chat.ts'
-
-const BASE = `http://localhost:${BACKEND_PORT_DEFAULT}`
 
 export interface Conversation {
     id: string
@@ -9,7 +7,7 @@ export interface Conversation {
 }
 
 export async function getConversations(userId: string): Promise<Conversation[]> {
-    const res = await fetch(`${BASE}/conversations?userId=${userId}`)
+    const res = await apiFetch(`/conversations?userId=${userId}`)
     const data = await res.json()
     return data.conversations ?? []
 }
@@ -18,8 +16,8 @@ export async function getMessages(
     conversationId: string,
     userId: string,
 ): Promise<MessageFromBackend[]> {
-    const res = await fetch(
-        `${BASE}/conversations/${conversationId}/messages?userId=${userId}`,
+    const res = await apiFetch(
+        `/conversations/${conversationId}/messages?userId=${userId}`,
     )
     const data = await res.json()
     return (data.messages as MessageFromBackend[]).map((m) => ({
@@ -31,7 +29,7 @@ export async function getMessages(
 export async function createConversation(
     userIds: string[],
 ): Promise<{ ok: true; conversationId: string } | { ok: false; error: string }> {
-    const res = await fetch(`${BASE}/conversations`, {
+    const res = await apiFetch('/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userIds }),

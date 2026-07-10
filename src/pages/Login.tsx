@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BACKEND_PORT_DEFAULT, GUEST_MODE, ROLE } from '../config.ts'
 import { useAuth } from '../context/AuthContext.tsx'
+import { apiFetch } from '../services/api.ts'
 import { getFeatureFlag } from '../services/featureFlagService.ts'
 import { loginAsGuest } from '../services/userService.ts'
 
@@ -62,7 +63,7 @@ export function Login() {
 
     async function handleLogin() {
         setError('')
-        const res = await fetch('/users/login', {
+        const res = await apiFetch('/users/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
@@ -79,7 +80,7 @@ export function Login() {
 
     async function handleRegister() {
         setError('')
-        const res = await fetch('/users/register', {
+        const res = await apiFetch('/users/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
