@@ -1,4 +1,4 @@
-import { BACKEND_PORT_DEFAULT } from '../config.ts'
+import { BACKEND_PORT_DEFAULT, GUEST_MODE } from '../config.ts'
 import type { User } from '../types/chat.ts'
 
 interface ChatHeaderProps {
@@ -85,7 +85,7 @@ export function ChatHeader({
                     </span>
                 </div>
             )}
-            {!inConversation && (
+            {!inConversation && !GUEST_MODE && (
                 <button
                     onClick={onToggleNewChat}
                     style={{

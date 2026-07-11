@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ChatBody } from '../components/ChatBody.tsx'
 import { ChatHeader } from '../components/ChatHeader.tsx'
 import { MessageInput } from '../components/MessageInput.tsx'
@@ -12,7 +13,15 @@ import { getMessages } from '../services/conversationService.ts'
 import type { MessageFromBackend, User } from '../types/chat.ts'
 
 export function Chat() {
-    const { userId, username } = useAuth()
+    const { userId, username, isLoading } = useAuth()
+    const navigate = useNavigate()
+
+    // Landed directly on /chat with no identity (e.g. a bookmark, or
+    // localStorage cleared) — bounce through Login, which provisions a guest
+    // (or shows the real login form) and navigates back here.
+    useEffect(() => {
+        if (!isLoading && !userId) navigate('/')
+    }, [isLoading, userId, navigate])
 
     // Seeded once from ?conversationId=... (set by the guest-demo flow when a
     // guest gets paired immediately on login) so a freshly-paired guest lands

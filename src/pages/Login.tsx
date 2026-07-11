@@ -23,10 +23,10 @@ export function Login() {
     // navigation with a bare `/chat`).
     const hasActedRef = useRef(false)
 
-    // Guest demo mode: skip the password form entirely. Once auth rehydration
-    // has resolved, either the returning guest's cookie already set userId
-    // (just continue to /chat), or there's no session yet and we provision a
-    // fresh ephemeral guest and get paired via the backend's waiting room.
+    // Guest demo mode: skip the password form entirely. AuthContext already
+    // resolves a returning guest's identity from localStorage synchronously
+    // on mount (see AuthContext.tsx), so `userId` here is either already set
+    // (just navigate) or genuinely absent (provision a fresh guest).
     useEffect(() => {
         if (!GUEST_MODE || isLoading || hasActedRef.current) return
         if (userId) {
