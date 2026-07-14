@@ -90,6 +90,9 @@ export function GuestInfoPanel() {
                 replies — it's there to demonstrate that multiple simultaneous
                 conversations (including group chats) work.
             </p>
+            <p style={{ margin: '6px 0 0' }}>
+                Uploaded photos are automatically deleted after 24 hours.
+            </p>
             <button
                 onClick={handleStartOver}
                 disabled={resetting}
