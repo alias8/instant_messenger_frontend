@@ -1,5 +1,6 @@
 import { BACKEND_PORT_DEFAULT, GUEST_MODE, ROLE } from '../config.ts'
 import type { User } from '../types/chat.ts'
+import { guestParticipantLabel } from '../utils/guestLabel.ts'
 
 interface ChatHeaderProps {
     username: string | null
@@ -18,12 +19,10 @@ export function ChatHeader({
 }: ChatHeaderProps) {
     const inConversation = participants.length > 0
     const isGroup = participants.length > 1
-    const otherRole = ROLE === 'userA' ? 'userB' : 'userA'
     const displayName = GUEST_MODE ? ROLE : username
-    const participantLabel = (p: User) => (GUEST_MODE ? otherRole : p.username)
-    const headerTitle = participants.map(participantLabel).join(', ')
+    const headerTitle = participants.map(guestParticipantLabel).join(', ')
     const headerInitials = participants
-        .map((p) => participantLabel(p)[0].toUpperCase())
+        .map((p) => guestParticipantLabel(p)[0].toUpperCase())
         .join('')
         .slice(0, 3)
 
@@ -90,7 +89,7 @@ export function ChatHeader({
                     )}
                 </div>
             )}
-            {!inConversation && !GUEST_MODE && (
+            {!inConversation && (
                 <button
                     onClick={onToggleNewChat}
                     style={{

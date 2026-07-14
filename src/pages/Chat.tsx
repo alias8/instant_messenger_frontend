@@ -1,16 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChatBody } from '../components/ChatBody.tsx'
 import { ChatHeader } from '../components/ChatHeader.tsx'
 import { MessageInput } from '../components/MessageInput.tsx'
 import { NewChatPanel } from '../components/NewChatPanel.tsx'
+import { GUEST_MODE } from '../config.ts'
 import { useAuth } from '../context/AuthContext.tsx'
 import { useConversationList } from '../hooks/useConversationList.ts'
 import { useMessageSender } from '../hooks/useMessageSender.ts'
 import { useNewChat } from '../hooks/useNewChat.ts'
 import { useWebSocket } from '../hooks/useWebSocket.ts'
 import { getMessages } from '../services/conversationService.ts'
+import { searchUsers } from '../services/userService.ts'
 import type { MessageFromBackend, User } from '../types/chat.ts'
+import { guestParticipantLabel } from '../utils/guestLabel.ts'
 
 export function Chat() {
     const { userId, username, isLoading } = useAuth()
@@ -42,7 +45,8 @@ export function Chat() {
             setMessages((prev) => [...prev, msg])
             setConversationId((prev) => prev ?? msg.conversation_id)
         },
-        (id, name) => setUserCache((c) => ({ ...c, [id]: name })),
+        (user) =>
+            setUserCache((c) => ({ ...c, [user.id]: guestParticipantLabel(user) })),
     )
 
     useEffect(() => {
@@ -61,7 +65,7 @@ export function Chat() {
         setParticipants(others)
         setUserCache((c) => {
             const next = { ...c }
-            others.forEach((u) => (next[u.id] = u.username))
+            others.forEach((u) => (next[u.id] = guestParticipantLabel(u)))
             return next
         })
     }, [conversationId, conversations, participants.length, userId])
@@ -70,14 +74,40 @@ export function Chat() {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
+    // Guest mode has no user search — "+New Chat" only ever offers these two
+    // fixed contacts: whichever guest you were auto-paired with, and the
+    // silent, non-replying "userC" demo account.
+    const [userCContact, setUserCContact] = useState<User | null>(null)
+    useEffect(() => {
+        if (!GUEST_MODE) return
+        searchUsers('userC')
+            .then((users) => setUserCContact(users[0] ?? null))
+            .catch(() => {})
+    }, [])
+
+    const guestPartner = useMemo(() => {
+        if (!GUEST_MODE) return undefined
+        for (const c of conversations) {
+            const partner = c.participants.find((p) => p.is_guest && p.id !== userId)
+            if (partner) return partner
+        }
+        return undefined
+    }, [conversations, userId])
+
+    const guestContacts = useMemo(
+        () => [guestPartner, userCContact].filter((u): u is User => !!u),
+        [guestPartner, userCContact],
+    )
+
     const newChat = useNewChat({
         userId,
+        guestContacts,
         onConversationCreated: (id, users) => {
             setConversationId(id)
             setParticipants(users)
             setUserCache((c) => {
                 const next = { ...c }
-                users.forEach((u) => (next[u.id] = u.username))
+                users.forEach((u) => (next[u.id] = guestParticipantLabel(u)))
                 return next
             })
         },
@@ -138,7 +168,7 @@ export function Chat() {
                     setParticipants(others)
                     setUserCache((c) => {
                         const next = { ...c }
-                        others.forEach((u) => (next[u.id] = u.username))
+                        others.forEach((u) => (next[u.id] = guestParticipantLabel(u)))
                         return next
                     })
                 }}

@@ -1,4 +1,6 @@
+import { GUEST_MODE } from '../config.ts'
 import type { User } from '../types/chat.ts'
+import { guestParticipantLabel as label } from '../utils/guestLabel.ts'
 
 interface NewChatPanelProps {
     selectedUsers: User[]
@@ -52,7 +54,7 @@ export function NewChatPanel({
                                 fontSize: 13,
                             }}
                         >
-                            {u.username}
+                            {label(u)}
                             <button
                                 onClick={() => onToggleUser(u)}
                                 style={{
@@ -64,7 +66,7 @@ export function NewChatPanel({
                                     lineHeight: 1,
                                     padding: 0,
                                 }}
-                                aria-label={`Remove ${u.username}`}
+                                aria-label={`Remove ${label(u)}`}
                             >
                                 ×
                             </button>
@@ -72,19 +74,25 @@ export function NewChatPanel({
                     ))}
                 </div>
             )}
-            <input
-                style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: 8,
-                    border: '1px solid #ccc',
-                    boxSizing: 'border-box',
-                }}
-                placeholder="Search by username…"
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                autoFocus
-            />
+            {GUEST_MODE ? (
+                <div style={{ color: '#667781', fontSize: 13 }}>
+                    Start a chat with:
+                </div>
+            ) : (
+                <input
+                    style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        border: '1px solid #ccc',
+                        boxSizing: 'border-box',
+                    }}
+                    placeholder="Search by username…"
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    autoFocus
+                />
+            )}
             {searchError && (
                 <div style={{ color: 'red', fontSize: 12, marginTop: 4 }}>
                     {searchError}
@@ -120,7 +128,7 @@ export function NewChatPanel({
                                     '#fff')
                             }
                         >
-                            {u.username}
+                            {label(u)}
                         </li>
                     ))}
                 </ul>

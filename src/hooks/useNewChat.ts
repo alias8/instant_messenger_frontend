@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react'
+import { GUEST_MODE } from '../config.ts'
 import { createConversation } from '../services/conversationService.ts'
 import { searchUsers } from '../services/userService.ts'
 import type { User } from '../types/chat.ts'
 
 interface UseNewChatOptions {
     userId: string | null
+    // Guest mode has no open user search (that would leak other demo
+    // visitors' raw guest ids) — instead it offers this fixed, known list
+    // (the paired partner + the silent userC contact) to start a chat with.
+    guestContacts?: User[]
     onConversationCreated: (conversationId: string, participants: User[]) => void
     onConversationsChanged: () => void
 }
 
 export function useNewChat({
     userId,
+    guestContacts = [],
     onConversationCreated,
     onConversationsChanged,
 }: UseNewChatOptions) {
@@ -23,6 +29,14 @@ export function useNewChat({
 
     useEffect(() => {
         setSearchError(null)
+        const available = (u: User) =>
+            u.id !== userId && !selectedUsers.some((s) => s.id === u.id)
+
+        if (GUEST_MODE) {
+            setSearchResults(guestContacts.filter(available))
+            return
+        }
+
         if (!searchQuery.trim()) {
             setSearchResults([])
             return
@@ -30,19 +44,13 @@ export function useNewChat({
         const timer = setTimeout(async () => {
             try {
                 const users = await searchUsers(searchQuery)
-                setSearchResults(
-                    users.filter(
-                        (u) =>
-                            u.id !== userId &&
-                            !selectedUsers.some((s) => s.id === u.id),
-                    ),
-                )
+                setSearchResults(users.filter(available))
             } catch {
                 setSearchError('Failed to search users')
             }
         }, 300)
         return () => clearTimeout(timer)
-    }, [searchQuery, userId, selectedUsers])
+    }, [searchQuery, userId, selectedUsers, guestContacts])
 
     function toggleSelectUser(user: User) {
         setSelectedUsers((prev) =>

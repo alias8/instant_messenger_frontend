@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { WS_BASE_URL } from '../services/api.ts'
 import { getUserById } from '../services/userService.ts'
-import type { MessageFromBackend } from '../types/chat.ts'
+import type { MessageFromBackend, User } from '../types/chat.ts'
 
 /**
  * Manages a single WebSocket connection for the given userId.
@@ -11,7 +11,7 @@ import type { MessageFromBackend } from '../types/chat.ts'
 export function useWebSocket(
     userId: string | null,
     onMessage: (msg: MessageFromBackend) => void,
-    onUserDiscovered: (id: string, username: string) => void,
+    onUserDiscovered: (user: User) => void,
 ): React.RefObject<WebSocket | null> {
     const socketRef = useRef<WebSocket | null>(null)
 
@@ -34,9 +34,7 @@ export function useWebSocket(
                 onMessageRef.current(parsed)
                 if (parsed.from_user_id !== userId) {
                     getUserById(parsed.from_user_id)
-                        .then((user) =>
-                            onUserDiscoveredRef.current(user.id, user.username),
-                        )
+                        .then((user) => onUserDiscoveredRef.current(user))
                         .catch(() => {})
                 }
             } catch {
