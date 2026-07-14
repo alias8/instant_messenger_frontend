@@ -1,4 +1,4 @@
-import { BACKEND_PORT_DEFAULT, GUEST_MODE } from '../config.ts'
+import { BACKEND_PORT_DEFAULT, GUEST_MODE, ROLE } from '../config.ts'
 import type { User } from '../types/chat.ts'
 
 interface ChatHeaderProps {
@@ -18,9 +18,12 @@ export function ChatHeader({
 }: ChatHeaderProps) {
     const inConversation = participants.length > 0
     const isGroup = participants.length > 1
-    const headerTitle = participants.map((p) => p.username).join(', ')
+    const otherRole = ROLE === 'userA' ? 'userB' : 'userA'
+    const displayName = GUEST_MODE ? ROLE : username
+    const participantLabel = (p: User) => (GUEST_MODE ? otherRole : p.username)
+    const headerTitle = participants.map(participantLabel).join(', ')
     const headerInitials = participants
-        .map((p) => p.username[0].toUpperCase())
+        .map((p) => participantLabel(p)[0].toUpperCase())
         .join('')
         .slice(0, 3)
 
@@ -73,7 +76,7 @@ export function ChatHeader({
                 </div>
             ) : (
                 <div>
-                    <strong>{username}</strong>
+                    <strong>{displayName}</strong>
                     <span
                         style={{
                             marginLeft: 8,

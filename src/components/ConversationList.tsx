@@ -1,5 +1,8 @@
-import { GUEST_MODE } from '../config.ts'
+import { GUEST_MODE, ROLE } from '../config.ts'
 import type { User } from '../types/chat.ts'
+
+const otherRole = ROLE === 'userA' ? 'userB' : 'userA'
+const participantLabel = (p: User) => (GUEST_MODE ? otherRole : p.username)
 
 interface Conversation {
     id: string
@@ -38,9 +41,9 @@ export function ConversationList({
         <div style={{ width: '100%' }}>
             {conversations.map((convo) => {
                 const others = convo.participants.filter((p) => p.id !== userId)
-                const title = others.map((p) => p.username).join(', ')
+                const title = others.map(participantLabel).join(', ')
                 const initials = others
-                    .map((p) => p.username[0].toUpperCase())
+                    .map((p) => participantLabel(p)[0].toUpperCase())
                     .join('')
                     .slice(0, 3)
                 return (
