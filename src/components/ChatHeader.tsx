@@ -77,15 +77,17 @@ export function ChatHeader({
             ) : (
                 <div>
                     <strong>{displayName}</strong>
-                    <span
-                        style={{
-                            marginLeft: 8,
-                            color: 'rgba(255,255,255,0.6)',
-                            fontSize: 12,
-                        }}
-                    >
-                        ::{BACKEND_PORT_DEFAULT}
-                    </span>
+                    {!GUEST_MODE && (
+                        <span
+                            style={{
+                                marginLeft: 8,
+                                color: 'rgba(255,255,255,0.6)',
+                                fontSize: 12,
+                            }}
+                        >
+                            ::{BACKEND_PORT_DEFAULT}
+                        </span>
+                    )}
                 </div>
             )}
             {!inConversation && !GUEST_MODE && (
