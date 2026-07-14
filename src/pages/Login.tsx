@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { GuestInfoPanel } from '../components/GuestInfoPanel.tsx'
 import { BACKEND_PORT_DEFAULT, GUEST_MODE, ROLE } from '../config.ts'
 import { useAuth } from '../context/AuthContext.tsx'
 import { apiFetch } from '../services/api.ts'
@@ -97,6 +98,7 @@ export function Login() {
         return (
             <div>
                 <h2>Instant Messenger</h2>
+                <GuestInfoPanel />
                 {provisioning ? <p>Connecting you to a live chat…</p> : null}
                 {error && <p>{error}</p>}
             </div>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChatBody } from '../components/ChatBody.tsx'
 import { ChatHeader } from '../components/ChatHeader.tsx'
+import { GuestInfoPanel } from '../components/GuestInfoPanel.tsx'
 import { MessageInput } from '../components/MessageInput.tsx'
 import { NewChatPanel } from '../components/NewChatPanel.tsx'
 import { GUEST_MODE } from '../config.ts'
@@ -128,6 +129,7 @@ export function Chat() {
                 margin: '0 auto',
             }}
         >
+            {GUEST_MODE && <GuestInfoPanel />}
             <ChatHeader
                 username={username}
                 participants={participants}
