@@ -138,6 +138,7 @@ export function Chat() {
                     setParticipants([])
                     setConversationId(null)
                     setMessages([])
+                    fetchConversations()
                 }}
                 onToggleNewChat={() =>
                     newChat.showNewChat ? newChat.closeNewChat() : newChat.openNewChat()
