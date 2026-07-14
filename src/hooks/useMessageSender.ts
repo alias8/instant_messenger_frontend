@@ -88,6 +88,18 @@ export function useMessageSender(
                     body: undefined,
                 }
                 socket.send(JSON.stringify(messageToSend))
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        conversation_id: conversationId,
+                        from_user_id: userId,
+                        body: undefined,
+                        metadata: { url: s3uploadUrl.url, key: s3uploadUrl.key },
+                        type: MessageType.image,
+                        seq: BigInt(-Date.now()),
+                        created_at: new Date(),
+                    },
+                ])
             }
         } catch {
             // ignore
