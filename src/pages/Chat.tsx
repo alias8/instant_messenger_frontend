@@ -43,7 +43,13 @@ export function Chat() {
     const socketRef = useWebSocket(
         userId,
         (msg) => {
-            setMessages((prev) => [...prev, msg])
+            // A single socket carries messages for every conversation the user is
+            // in, not just the one currently open — only append messages that
+            // belong to the active conversation (or are the first message ever,
+            // opening one for the first time).
+            if (conversationId === null || msg.conversation_id === conversationId) {
+                setMessages((prev) => [...prev, msg])
+            }
             setConversationId((prev) => prev ?? msg.conversation_id)
         },
         (user) =>
